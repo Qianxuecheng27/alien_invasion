@@ -1,6 +1,7 @@
 import pygame
 from pygame.sprite import Sprite
 
+
 class Alien(Sprite):
     """represent single alien"""
 
@@ -9,15 +10,15 @@ class Alien(Sprite):
         self.screen = screen
         self.ai_settings = ai_settings
 
-        #load alien image and set rect distribute
+        # load alien image and set rect distribute
         self.image = pygame.image.load('images/alien.bmp')
         self.rect = self.image.get_rect()
 
-        #initial every alien appear at left-top conner of the screen
+        # initial every alien appear at left-top conner of the screen
         self.rect.x = self.rect.width
         self.rect.y = self.rect.height
 
-        #save where is the alien
+        # save where is the alien
         self.x = float(self.rect.x)
 
     def blitme(self):
