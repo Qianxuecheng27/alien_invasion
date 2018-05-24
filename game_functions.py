@@ -58,7 +58,7 @@ def update_screen(ai_settings, screen, ship, aliens, bullets):
     pygame.display.flip()
 
 
-def update_bullets(bullets):
+def update_bullets(bullets, aliens):
     """更新子弹的位置，并且删除超过屏幕的子弹"""
     # 更新子弹的位置
     bullets.update()
@@ -68,20 +68,65 @@ def update_bullets(bullets):
         if bullet.rect.bottom <= 0:
             bullets.remove(bullet)
 
+    #检查子弹是否击中了外星人，击中了就删除两个元素
+    collisions = pygame.sprite.groupcollide(bullets, aliens, True, True)
 
-def create_fleet(ai_settings, screen, aliens):
-    """创建外星人群"""
-    # 创建一个外星人，并计算一行可容纳多少个外星人
-    # 外星人之间的间距为外星人的宽度
-    alien = Alien(ai_settings, screen)
-    alien_width = alien.rect.width
+
+def get_number_aliens_x(ai_settings, alien_width):
+    """calculate number of aliens along x"""
     available_space_x = ai_settings.screen_width - 2 * alien_width
     number_aliens_x = int(available_space_x / (2 * alien_width))
+    return number_aliens_x
+
+
+def get_number_rows(ai_settings, ship_height, alien_height):
+    """calculate the number of rows of aliens"""
+    available_space_y = (ai_settings.screen_height - (3 * alien_height)-
+                            ship_height)
+    number_rows = int(available_space_y / (2 * alien_height))
+    return number_rows
+
+
+def create_alien(ai_settings, screen, aliens, alien_number, row_number):
+    """create one alien and put it at current line"""
+    alien = Alien(ai_settings, screen)
+    alien_width = alien.rect.width
+    alien.x = alien_width + 2 * alien_width * alien_number
+    alien.rect.x = alien.x
+    alien.rect.y = alien.rect.height + 2 * alien.rect.height * row_number
+    aliens.add(alien)
+
+
+def create_fleet(ai_settings, screen, ship, aliens):
+    """创建外星人群"""
+    # 创建一个外星人，并计算一行可容纳多少个外星人
+    alien = Alien(ai_settings, screen)
+    number_aliens_x = get_number_aliens_x(ai_settings, alien.rect.width)
+    number_rows = get_number_rows(ai_settings, ship.rect.height,
+                                    alien.rect.height)
 
     # 创建第一行外星人
-    for alien_number in range(number_aliens_x):
-        #创建一个外星人并加入行
-        alien = Alien(ai_settings, screen)
-        alien.x = alien_width + 2 * alien_width * alien_number
-        alien.rect.x = alien.x
-        aliens.add(alien)
+    for row_number in range(number_rows):
+        for alien_number in range(number_aliens_x):
+            create_alien(ai_settings, screen, aliens, alien_number, row_number)
+
+
+def check_fleet_edges(ai_settings, aliens):
+    """change the direction when to edges"""
+    for alien in aliens.sprites():
+        if alien.check_edges():
+            change_fleet_direction(ai_settings, aliens)
+            break
+
+
+def change_fleet_direction(ai_settings, aliens):
+    """move all aliens down"""
+    for alien in aliens.sprites():
+        alien.rect.y += ai_settings.fleet_drop_speed
+    ai_settings.fleet_direction *= -1
+
+
+def update_aliens(ai_settings, aliens):
+    """更新外星人群中所有外星人的位置"""
+    check_fleet_edges(ai_settings, aliens)
+    aliens.update()
