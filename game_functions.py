@@ -1,4 +1,5 @@
 import sys
+from time import sleep
 
 import pygame
 
@@ -45,7 +46,7 @@ def check_events(ai_settings, screen, ship, bullets):
             check_keyup_events(event, ship)
 
 
-def update_screen(ai_settings, screen, ship, aliens, bullets):
+def update_screen(ai_settings, screen, stats, ship, aliens, bullets, play_button):
     """更新屏幕上的图像，并切换到新屏幕"""
     # 每次循环都重绘屏幕
     screen.fill(ai_settings.bg_color)
@@ -54,11 +55,15 @@ def update_screen(ai_settings, screen, ship, aliens, bullets):
     ship.blitme()
     aliens.draw(screen)
 
+    #非活动状态时，绘制play button
+    if not stats.game_active:
+        play_button.draw_button()
+
     # 让最新绘制的屏幕可见
     pygame.display.flip()
 
 
-def update_bullets(bullets, aliens):
+def update_bullets(ai_settings,screen, ship, aliens, bullets):
     """更新子弹的位置，并且删除超过屏幕的子弹"""
     # 更新子弹的位置
     bullets.update()
@@ -68,8 +73,17 @@ def update_bullets(bullets, aliens):
         if bullet.rect.bottom <= 0:
             bullets.remove(bullet)
 
+    check_bullet_alien_collisions(ai_settings, screen, ship, aliens, bullets)
+
+    
+def check_bullet_alien_collisions(ai_settings, screen, ship, aliens, bullets):
+    """hand over the collision of bullet and alien"""
     #检查子弹是否击中了外星人，击中了就删除两个元素
     collisions = pygame.sprite.groupcollide(bullets, aliens, True, True)
+
+    if len(aliens) == 0:
+        bullets.empty()
+        create_fleet(ai_settings, screen, ship, aliens)
 
 
 def get_number_aliens_x(ai_settings, alien_width):
@@ -126,7 +140,45 @@ def change_fleet_direction(ai_settings, aliens):
     ai_settings.fleet_direction *= -1
 
 
-def update_aliens(ai_settings, aliens):
+def ship_hit(ai_settings, stats, screen, ship, aliens, bullets):
+    """响应被外星人转到飞船"""
+    #ship_left -1
+    if stats.ships_left >0:
+        stats.ships_left -= 1
+
+        #empty the aliengroup and bullet group
+        aliens.empty()
+        bullets.empty()
+
+        #create  new aliens
+        create_fleet(ai_settings, screen, ship, aliens)
+        ship.center_ship()
+
+        #pause
+        sleep(0.5)
+
+    else:
+        stats.game_active = False
+
+
+def check_aliens_bottom(ai_settings, stats, screen, ship, aliens, bullets):
+    """check if alien gets the bottom"""
+    screen_rect = screen.get_rect()
+    for alien in aliens.sprites():
+        if alien.rect.bottom >= screen_rect.bottom:
+            #像撞到飞船一样处理
+            ship_hit(ai_settings, stats, screen, ship, aliens, bullets)
+            break
+
+
+def update_aliens(ai_settings, stats, screen, ship, aliens, bullets):
     """更新外星人群中所有外星人的位置"""
     check_fleet_edges(ai_settings, aliens)
     aliens.update()
+
+    #check the collision of aliens and ship
+    if pygame.sprite.spritecollideany(ship, aliens):
+        ship_hit(ai_settings, stats, screen, ship, aliens, bullets)
+
+    #check if alien get the bottom
+    check_aliens_bottom(ai_settings, stats, screen, ship, aliens, bullets)
