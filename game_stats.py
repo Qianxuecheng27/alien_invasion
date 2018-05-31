@@ -7,10 +7,12 @@ class GameStats():
         self.reset_stats()
         #游戏刚启动时处于不活动状态
         self.game_active = False
+        self.high_score = 0
 
 
     def reset_stats(self):
         """initial the stat information during the game."""
         self.ships_left = self.ai_settings.ship_limit
         self.score = 0
+        self.level = 1
 
